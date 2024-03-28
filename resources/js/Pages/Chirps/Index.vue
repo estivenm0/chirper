@@ -2,9 +2,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import { useForm, Head, router } from '@inertiajs/vue3';
+import { useForm, Head, router, usePage } from '@inertiajs/vue3';
 import Chirp from '@/Components/Chirps/Chirp.vue';
 import { onMounted } from 'vue';
+import { onUnmounted } from 'vue';
+import { ref } from 'vue';
 
 
 
@@ -18,12 +20,26 @@ defineProps<{
 }>
 ();
 
-onMounted(() => {
-    let interval = setInterval(function () {
-        router.reload({ only: ['chirps'] })
-    }, 10000);  
+const chirpss = ref(usePage().props.chirps);
 
-    clearInterval(interval);
+onMounted(() => {
+    Echo.join(`chirps`)
+            .here((users) => {
+                // console.log(users);
+            })
+            .joining((user) => {
+                // console.log(user);
+            })
+            .leaving((user) => {
+                // console.log(user);
+            })
+            .listen('ChirpCreated', (event) => {
+                chirpss.value = [event.chirp, ...chirpss.value];
+            });
+})
+
+onUnmounted(() => {
+    Echo.leave(`chirps`);
 })
 
 </script>
@@ -72,7 +88,7 @@ onMounted(() => {
                 </Transition>
             <div class="mt-6 bg-white divide-y rounded-lg shadow-sm">
                 <Chirp
-                    v-for="chirp in chirps"
+                    v-for="chirp in chirpss"
                     :key="chirp.id"
                     :chirp="chirp"
                 />
